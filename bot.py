@@ -5,27 +5,38 @@ import telebot
 import datetime
 import threading
 import time
+import pymongo
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
 
 load_dotenv()
+uri = os.getenv("MONGO_URI")
+client = pymongo.MongoClient(uri, server_api=ServerApi("1"))
+try:
+    client.admin.command("ping")
+    print("Pinged your deployment. You successfully connected to MongoDB!")
+except Exception as e:
+    print(e)
+
+my_db = client["mydb"]
+my_col = my_db["birthdays"]
+
 BOT_TOKEN = os.getenv("BOT_TOKEN")
-print(BOT_TOKEN)
 bot = telebot.TeleBot(BOT_TOKEN)
 
 personName = None
 personBirthday = None
 
-Birthdays = {}
+
+# def isSomeoneBirthdayToday():
+#     while True:
+#         print("Checking if someone has birthday today")
+#         time.sleep(5)
 
 
-def isSomeoneBirthdayToday():
-    while True:
-        print("Checking if someone has birthday today")
-        time.sleep(5)
-
-
-@bot.message_handler(func=isSomeoneBirthdayToday)
-def sendBirthday(message):
-    bot.send_message(message.chat.id, "Today is someone's birthday")
+# @bot.message_handler(func=isSomeoneBirthdayToday)
+# def sendBirthday(message):
+#     bot.send_message(message.chat.id, "Today is someone's birthday")
 
 
 @bot.message_handler(commands=["start"])
@@ -62,18 +73,17 @@ def getPersonBirthday(message):
     print(message.text)
     personBirthday = message.text
 
-    personDate = personBirthday[:5]
-    if personDate in Birthdays:
-        Birthdays[personDate].append(personName)
-    else:
-        Birthdays[personDate] = [personName]
-
-    print(Birthdays)
+    my_dict = {
+        "user_id": message.chat.id,
+        "name": personName,
+        "birthday": personBirthday,
+    }
+    x = my_col.insert_one(my_dict)
     bot.send_message(message.chat.id, "Birthday added successfully")
     bot.send_message(message.chat.id, "Person's name is " + personName)
     bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
 
 
-birthday_thread = threading.Thread(target=isSomeoneBirthdayToday)
-birthday_thread.start()
+# birthday_thread = threading.Thread(target=isSomeoneBirthdayToday)
+# birthday_thread.start()
 bot.infinity_polling()
