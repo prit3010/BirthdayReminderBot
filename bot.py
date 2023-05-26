@@ -48,11 +48,16 @@ def isSomeoneBirthdayToday():
         for uid, birthdayList in birthdayMap.items():
             wishingList = ""
             for name, year in birthdayList:
-                wishingList += name + " " + year + "\n"
+                wishingList += name + " (" + str(getAge(year)) + ") \n"
             print(wishingList)
-            bot.send_message(uid, "Today is birthdays of " + wishingList)
+            bot.send_message(uid, "Today is birthdays of \n" + wishingList)
 
-        time.sleep(5)
+        time.sleep(60)
+
+
+def getAge(year):
+    today = datetime.datetime.now()
+    return today.year - int(year)
 
 
 # @bot.message_handler(func=isSomeoneBirthdayToday)
@@ -71,6 +76,28 @@ def help_message(message):
         message.chat.id,
         "Some of the following commands are available:\n /start\n /help\n /about\n /addBirthday\n /addManyBirthdays",
     )
+
+
+@bot.message_handler(content_types=["document"])
+def handle_file(message):
+    file_info = bot.get_file(message.document.file_id)
+    downloaded_file = bot.download_file(file_info.file_path)
+    strForm = downloaded_file.decode("utf-8")
+    listNames = strForm.split("\r\n")[1:]
+    print(listNames)
+    for name in listNames:
+        print(name)
+        n, b = name.split(",")
+        print(n, b)
+        my_dict = {
+            "user_id": message.chat.id,
+            "name": n,
+            "birthday": b,
+            "year": b.split(".")[2],
+            "reminder": 0,
+        }
+        x = my_col.insert_one(my_dict)
+    bot.send_message(message.chat.id, "Received file and Added Birthdays successfully")
 
 
 @bot.message_handler(commands=["addBirthday"])
@@ -104,6 +131,7 @@ def getPersonBirthday(message):
         "year": year,
         "reminder": 0,
     }
+    # TODO: Check if Person exists in DB
     x = my_col.insert_one(my_dict)
     bot.send_message(message.chat.id, "Birthday added successfully")
     bot.send_message(message.chat.id, "Person's name is " + personName)
