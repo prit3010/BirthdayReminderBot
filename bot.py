@@ -36,16 +36,22 @@ def isSomeoneBirthdayToday():
         print(today)
         myquery = {"birthday": "07.12"}
         mydoc = my_col.find(myquery, {})
-        birthdayList = []
+        birthdayMap = {}
         for x in mydoc:
             if x["reminder"] == 0:
-                birthdayList.append((x["name"], x["year"], x["user_id"]))
+                uid = x["user_id"]
+                if uid in birthdayMap:
+                    birthdayMap[uid].append((x["name"], x["year"]))
+                else:
+                    birthdayMap[uid] = [(x["name"], x["year"])]
                 my_col.update_one(x, {"$set": {"reminder": 1}})
-        for birthday in birthdayList:
-            bot.send_message(
-                birthday[2],
-                "Happy Birthday " + birthday[0] + " !\n" + "He is " + birthday[1],
-            )
+        for uid, birthdayList in birthdayMap.items():
+            wishingList = ""
+            for name, year in birthdayList:
+                wishingList += name + " " + year + "\n"
+            print(wishingList)
+            bot.send_message(uid, "Today is birthdays of " + wishingList)
+
         time.sleep(5)
 
 
