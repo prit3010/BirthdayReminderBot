@@ -28,10 +28,25 @@ personName = None
 personBirthday = None
 
 
-# def isSomeoneBirthdayToday():
-#     while True:
-#         print("Checking if someone has birthday today")
-#         time.sleep(5)
+def isSomeoneBirthdayToday():
+    while True:
+        print("Checking if someone has birthday today")
+        today = datetime.datetime.now()
+        today = today.strftime("%d.%m")
+        print(today)
+        myquery = {"birthday": "07.12"}
+        mydoc = my_col.find(myquery, {})
+        birthdayList = []
+        for x in mydoc:
+            if x["reminder"] == 0:
+                birthdayList.append((x["name"], x["year"], x["user_id"]))
+                my_col.update_one(x, {"$set": {"reminder": 1}})
+        for birthday in birthdayList:
+            bot.send_message(
+                birthday[2],
+                "Happy Birthday " + birthday[0] + " !\n" + "He is " + birthday[1],
+            )
+        time.sleep(5)
 
 
 # @bot.message_handler(func=isSomeoneBirthdayToday)
@@ -72,11 +87,16 @@ def getPersonBirthday(message):
     global personBirthday
     print(message.text)
     personBirthday = message.text
+    year = personBirthday.split(".")[2]
+    print(year)
+    personBirthdate = personBirthday.split(".")[0] + "." + personBirthday.split(".")[1]
 
     my_dict = {
         "user_id": message.chat.id,
         "name": personName,
-        "birthday": personBirthday,
+        "birthday": personBirthdate,
+        "year": year,
+        "reminder": 0,
     }
     x = my_col.insert_one(my_dict)
     bot.send_message(message.chat.id, "Birthday added successfully")
@@ -84,6 +104,6 @@ def getPersonBirthday(message):
     bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
 
 
-# birthday_thread = threading.Thread(target=isSomeoneBirthdayToday)
-# birthday_thread.start()
+birthday_thread = threading.Thread(target=isSomeoneBirthdayToday)
+birthday_thread.start()
 bot.infinity_polling()
