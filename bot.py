@@ -73,9 +73,18 @@ def help_message(message):
     )
 
 
-@bot.message_handler(content_types=["document"])
+@bot.message_handler(commands=["addManyBirthdays"])
+def add_Many_Birthdays(message):
+    bot.send_message(
+        message.chat.id,
+        "Please send a CSV file with names and birthdays in format name,birthday",
+    )
+    bot.register_next_step_handler(message, handle_file)
+
+
 def handle_file(message):
     file_info = bot.get_file(message.document.file_id)
+    print(file_info)
     downloaded_file = bot.download_file(file_info.file_path)
     strForm = downloaded_file.decode("utf-8")
     listNames = strForm.split("\r\n")[1:]
@@ -95,10 +104,10 @@ def handle_file(message):
 @bot.message_handler(commands=["addBirthday"])
 def getBirthday(message):
     bot.send_message(message.chat.id, "Please enter Person's name")
-    bot.register_next_step_handler(message, getPersonName)
+    bot.register_next_step_handler(message, getPersonName, "1")
 
 
-def getPersonName(message):
+def getPersonName(message, arg):
     global personName
     personName = message.text
     if checkIfPersonExists(personName):
@@ -141,6 +150,11 @@ def checkIfPersonExists(name):
         return True
     else:
         return False
+
+
+@bot.message_handler(func=lambda message: True)
+def invalid_command(message):
+    bot.reply_to(message, "Invalid command")
 
 
 birthday_thread = threading.Thread(target=isSomeoneBirthdayToday)
