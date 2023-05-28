@@ -2,7 +2,8 @@ import os
 from dotenv import load_dotenv
 
 import telebot
-import datetime
+from datetime import datetime
+import re
 import threading
 import time
 import pymongo
@@ -31,7 +32,7 @@ personBirthday = None
 def isSomeoneBirthdayToday():
     while True:
         print("Checking if someone has birthday today")
-        today = datetime.datetime.now()
+        today = datetime.now()
         today = today.strftime("%d.%m")
         print(today)
         myquery = {"birthday": "07.12"}
@@ -138,28 +139,43 @@ def getPersonName(message, action):
 def getPersonBirthday(message, action):
     global personBirthday
     personBirthday = message.text
-    year = personBirthday.split(".")[2]
-    personBirthdate = personBirthday.split(".")[0] + "." + personBirthday.split(".")[1]
-    if action == "/editBirthday":
-        myquery = {"name": personName}
-        newvalues = {"$set": {"birthday": personBirthdate, "year": year}}
-        my_col.update_one(myquery, newvalues)
-        bot.send_message(message.chat.id, "Birthday updated successfully")
-        bot.send_message(message.chat.id, "Person's name is " + personName)
-        bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
+    if not isValidBirthday(personBirthday):
+        bot.send_message(message.chat.id, "Please enter valid birthday")
+        bot.register_next_step_handler(message, getPersonBirthday, action)
     else:
-        my_dict = {
-            "user_id": message.chat.id,
-            "name": personName,
-            "birthday": personBirthdate,
-            "year": year,
-            "reminder": 0,
-        }
+        year = personBirthday.split(".")[2]
+        personBirthdate = (
+            personBirthday.split(".")[0] + "." + personBirthday.split(".")[1]
+        )
+        if action == "/editBirthday":
+            myquery = {"name": personName}
+            newvalues = {"$set": {"birthday": personBirthdate, "year": year}}
+            my_col.update_one(myquery, newvalues)
+            bot.send_message(message.chat.id, "Birthday updated successfully")
+            bot.send_message(message.chat.id, "Person's name is " + personName)
+            bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
+        else:
+            my_dict = {
+                "user_id": message.chat.id,
+                "name": personName,
+                "birthday": personBirthdate,
+                "year": year,
+                "reminder": 0,
+            }
 
-        x = my_col.insert_one(my_dict)
-        bot.send_message(message.chat.id, "Birthday added successfully")
-        bot.send_message(message.chat.id, "Person's name is " + personName)
-        bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
+            x = my_col.insert_one(my_dict)
+            bot.send_message(message.chat.id, "Birthday added successfully")
+            bot.send_message(message.chat.id, "Person's name is " + personName)
+            bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
+
+
+def isValidBirthday(birthday):
+    # Regex to check valid date format of DD.MM.YYYY
+    pattern = r"^(0[1-9]|[1-2][0-9]|3[0-1])\.(0[1-9]|1[0-2])\.\d{4}$"
+    if re.match(pattern, birthday):
+        return True
+    else:
+        return False
 
 
 def checkIfPersonExists(name):
