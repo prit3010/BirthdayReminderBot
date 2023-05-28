@@ -74,6 +74,14 @@ def help_message(message):
     )
 
 
+@bot.message_handler(commands=["about"])
+def about_message(message):
+    bot.send_message(
+        message.chat.id,
+        "This bot is created by @prittamravi. \n This Bot can be used to add birthdays of your friends and family and get notified on their birthdays. \n You can also add multiple birthdays at once by sending a CSV file with names and birthdays. \n You can also edit birthdays of your friends and family. \n You can also get a list of all the birthdays you have added. \n ",
+    )
+
+
 @bot.message_handler(commands=["getList"])
 def getListOfBirthdays(message):
     myquery = {"user_id": message.chat.id}
