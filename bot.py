@@ -69,8 +69,18 @@ def send_welcome(message):
 def help_message(message):
     bot.send_message(
         message.chat.id,
-        "Some of the following commands are available:\n /start\n /help\n /about\n /addBirthday\n /addManyBirthdays",
+        "Some of the following commands are available:\n /start\n /help\n /about\n /addBirthday\n /addManyBirthdays \n /editBirthday \n /getList",
     )
+
+
+@bot.message_handler(commands=["getList"])
+def getListOfBirthdays(message):
+    myquery = {"user_id": message.chat.id}
+    mydoc = my_col.find(myquery, {})
+    birthdayList = ""
+    for x in mydoc:
+        birthdayList += x["name"] + " (" + x["birthday"] + ") \n"
+    bot.send_message(message.chat.id, "List of Birthdays \n" + birthdayList)
 
 
 @bot.message_handler(commands=["addManyBirthdays"])
@@ -93,7 +103,7 @@ def handle_file(message):
         my_dict = {
             "user_id": message.chat.id,
             "name": n,
-            "birthday": b,
+            "birthday": b.split(".")[0] + "." + b.split(".")[1],
             "year": b.split(".")[2],
             "reminder": 0,
         }
