@@ -62,7 +62,7 @@ def getAge(year):
 
 @bot.message_handler(commands=["start"])
 def send_welcome(message):
-    bot.reply_to(message, "Howdy, how are you doing?")
+    bot.reply_to(message, "Howdy, how are you doing? Type /help to know more")
 
 
 @bot.message_handler(commands=["help"])
@@ -101,16 +101,18 @@ def handle_file(message):
     bot.send_message(message.chat.id, "Received file and Added Birthdays successfully")
 
 
-@bot.message_handler(commands=["addBirthday"])
+@bot.message_handler(commands=["addBirthday", "editBirthday"])
 def getBirthday(message):
     bot.send_message(message.chat.id, "Please enter Person's name")
-    bot.register_next_step_handler(message, getPersonName, "1")
+    bot.register_next_step_handler(message, getPersonName, message)
 
 
-def getPersonName(message, arg):
+def getPersonName(message, action):
     global personName
     personName = message.text
-    if checkIfPersonExists(personName):
+    action = action.text
+    print(action)
+    if action == "/addBirthday" and checkIfPersonExists(personName):
         bot.send_message(
             message.chat.id,
             "Person with name " + personName + " already exists.",
@@ -120,27 +122,34 @@ def getPersonName(message, arg):
         bot.send_message(
             message.chat.id, "Please enter Person's birthday in format DD.MM.YYYY"
         )
-        bot.register_next_step_handler(message, getPersonBirthday)
+        bot.register_next_step_handler(message, getPersonBirthday, action)
 
 
-def getPersonBirthday(message):
+def getPersonBirthday(message, action):
     global personBirthday
     personBirthday = message.text
     year = personBirthday.split(".")[2]
     personBirthdate = personBirthday.split(".")[0] + "." + personBirthday.split(".")[1]
+    if action == "/editBirthday":
+        myquery = {"name": personName}
+        newvalues = {"$set": {"birthday": personBirthdate, "year": year}}
+        my_col.update_one(myquery, newvalues)
+        bot.send_message(message.chat.id, "Birthday updated successfully")
+        bot.send_message(message.chat.id, "Person's name is " + personName)
+        bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
+    else:
+        my_dict = {
+            "user_id": message.chat.id,
+            "name": personName,
+            "birthday": personBirthdate,
+            "year": year,
+            "reminder": 0,
+        }
 
-    my_dict = {
-        "user_id": message.chat.id,
-        "name": personName,
-        "birthday": personBirthdate,
-        "year": year,
-        "reminder": 0,
-    }
-
-    x = my_col.insert_one(my_dict)
-    bot.send_message(message.chat.id, "Birthday added successfully")
-    bot.send_message(message.chat.id, "Person's name is " + personName)
-    bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
+        x = my_col.insert_one(my_dict)
+        bot.send_message(message.chat.id, "Birthday added successfully")
+        bot.send_message(message.chat.id, "Person's name is " + personName)
+        bot.send_message(message.chat.id, "Person's birthday is " + personBirthday)
 
 
 def checkIfPersonExists(name):
