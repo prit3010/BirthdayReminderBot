@@ -109,14 +109,21 @@ def handle_file(message):
     listNames = strForm.split("\r\n")[1:]
     for name in listNames:
         n, b = name.split(",")
-        my_dict = {
-            "user_id": message.chat.id,
-            "name": n,
-            "birthday": b.split(".")[0] + "." + b.split(".")[1],
-            "year": b.split(".")[2],
-            "reminder": 0,
-        }
-        x = my_col.insert_one(my_dict)
+        if checkIfPersonExists(n):
+            bot.send_message(
+                message.chat.id,
+                "Person with name " + n + " already exists. Skipping this person.",
+            )
+            continue
+        else:
+            my_dict = {
+                "user_id": message.chat.id,
+                "name": n,
+                "birthday": b.split(".")[0] + "." + b.split(".")[1],
+                "year": b.split(".")[2],
+                "reminder": 0,
+            }
+            x = my_col.insert_one(my_dict)
     bot.send_message(message.chat.id, "Received file and Added Birthdays successfully")
 
 
