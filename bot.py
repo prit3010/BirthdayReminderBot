@@ -35,7 +35,7 @@ def isSomeoneBirthdayToday():
         today = datetime.now()
         today = today.strftime("%d.%m")
         print(today)
-        myquery = {"birthday": "07.12"}
+        myquery = {"birthday": today}
         mydoc = my_col.find(myquery, {})
         birthdayMap = {}
         for x in mydoc:
@@ -57,7 +57,7 @@ def isSomeoneBirthdayToday():
 
 
 def getAge(year):
-    today = datetime.datetime.now()
+    today = datetime.now()
     return today.year - int(year)
 
 
@@ -101,6 +101,22 @@ def add_Many_Birthdays(message):
     bot.register_next_step_handler(message, handle_file)
 
 
+@bot.message_handler(func=lambda message: message.text == "Yes" or message.text == "No")
+def overrideHandler(message, name, birthday):
+    print(message.text)
+    print(name)
+    print(birthday)
+    if message.text == "Yes":
+        myquery = {"name": name}
+        newvalues = {"$set": {"birthday": birthday}}
+        my_col.update_one(myquery, newvalues)
+        bot.send_message(message.chat.id, "Birthday updated successfully")
+        return
+    else:
+        bot.send_message(message.chat.id, "Birthday not updated")
+        return
+
+
 def handle_file(message):
     file_info = bot.get_file(message.document.file_id)
     print(file_info)
@@ -112,7 +128,7 @@ def handle_file(message):
         if checkIfPersonExists(n):
             bot.send_message(
                 message.chat.id,
-                "Person with name " + n + " already exists. Skipping this person.",
+                "Person with name " + n + " already exists. Skipping Entry",
             )
             continue
         else:
